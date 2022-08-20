@@ -3,7 +3,7 @@ Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        TaskDefinition: "<TASK_DEFINITION>"
+        TaskDefinition: <TASK_DEFINITION>
         LoadBalancerInfo:
-          ContainerName: "wsi-korea-ctn" # Edit here
-          ContainerPort: 8080
+          ContainerName: wsi-api-ctn
+          ContainerPort: 5000

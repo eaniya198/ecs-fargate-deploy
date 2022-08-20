@@ -2,47 +2,42 @@ version: 0.2
 
 env:
   variables:
-    TZ: Asia/Seoul
+    TZ: "Asia/Seoul"
 
 phases:
   install:
     commands:
-      - yum update -y
+      - echo Entered the install phase...
 
   pre_build:
     commands:
-      - AWS_REPOSITORY_NAME="ecs-deploy-12312313"
-      - BUILD_TIME=$(date "+%y%m%d%H%M%S")
       - echo Entered the pre_build phase...
+      - aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 948216186415.dkr.ecr.ap-northeast-2.amazonaws.com
       - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      - IMAGE_TAGS=$(date "+%y%m%d%H%M%S")
 
   build:
     commands:
-      - echo Entered the build phase...
       - echo Build started on `date`
-      - ls -al
-      - docker build -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_REPOSITORY_NAME}:${BUILD_TIME} .
-      - printf '[{"imageURI":"%s"}]' ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_REPOSITORY_NAME}:${BUILD_TIME} > imageDetail.json
-      - sed -i "s|CHANGEME|${BUILD_TIME}|g" ./taskdef.json
-      
+      - docker build -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}:${IMAGE_TAGS} .
+      - sed -i "s|CHANGEME|$IMAGE_TAGS|g" taskdef.json
+
   post_build:
     commands:
-      - echo Entered the post_build phase...
       - echo Build completed on `date`
-      - docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_REPOSITORY_NAME}:${BUILD_TIME}
-      - sed -i "s|TASK_ARN|${TASK_ARN}|g" appspec.yml
+      - docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}:${IMAGE_TAGS}
+      - printf '[{"name":"wsi-api-ctn"}, "imageUri":"%s"]' ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}:${IMAGE_TAGS} > imageDetail.json
+      - cat imageDetail.json
+
 artifacts:
   files:
     - appspec.yml
     - taskdef.json
-    - imageDetail.json
   secondary-artifacts:
-    DefinitionArtifact:
+    DefinitionArtifacts:
       files:
         - appspec.yml
         - taskdef.json
     ImageArtifact:
-      file:
+      files:
         - imageDetail.json
-  discard-paths: yes

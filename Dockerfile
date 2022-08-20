@@ -1,10 +1,10 @@
-FROM golang:1.16 as builder
+FROM public.ecr.aws/docker/library/golang:latest as builder
 WORKDIR /apps/
-COPY app.go .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build app.go
+COPY src/ .
+RUN go mod tidy
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main main.go 
 
 FROM scratch
-COPY --from=builder /apps/app /
-
-EXPOSE 8080
-CMD ["/app"]
+COPY --from=builder /apps/main /
+EXPOSE 5000
+CMD ["/main"]
