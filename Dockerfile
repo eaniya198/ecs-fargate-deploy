@@ -1,10 +1,21 @@
-FROM public.ecr.aws/docker/library/golang:latest as builder
-WORKDIR /apps/
-COPY src/ .
-RUN go mod tidy
-RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main main.go 
+# Build stage
+FROM golang:1.17-alpine AS build
 
-FROM scratch
-COPY --from=builder /apps/main /
-EXPOSE 5000
-CMD ["/main"]
+WORKDIR /source
+
+COPY src/ ./
+
+RUN go mod tidy \
+ && go mod download \
+ && go build -o ./main
+
+# Runtime stage
+FROM golang:1.17-alpine
+
+WORKDIR /app
+
+COPY --from=build /source/main ./
+
+RUN chmod +x ./main
+
+ENTRYPOINT ["./main"]

@@ -1,33 +1,20 @@
 {
   "executionRoleArn": "arn:aws:iam::948216186415:role/ecsTaskExecutionRole",
-  "containerDefinitions": [
-    {
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/ecs/wsi-api-task",
-          "awslogs-region": "ap-northeast-2",
-          "awslogs-stream-prefix": "ecs"
-        }
-      },
-      "portMappings": [
-        {
-          "hostPort": 5000,
-          "protocol": "tcp",
-          "containerPort": 5000
-        }
-      ],
-      "image": "948216186415.dkr.ecr.ap-northeast-2.amazonaws.com/wsi-api-repo:CHANGEME",
-      "essential": true,
-      "name": "wsi-api-ctn"
-    }
-  ],
-  "memory": "512",
-  "taskRoleArn": "arn:aws:iam::948216186415:role/ecsTaskExecutionRole",
-  "family": "wsi-api-task",
+  "containerDefinitions": [{
+    "name": "wsi-api-ctn",
+    "image": "<IMAGE>",
+    "essential": true,
+    "portMappings": [{
+      "protocol": "tcp",
+      "hostPort": 5000,
+      "containerPort": 5000
+    }]
+  }],
   "requiresCompatibilities": [
     "FARGATE"
   ],
   "networkMode": "awsvpc",
-  "cpu": "256"
+  "cpu": "256",
+  "memory": "512",
+  "family": "wsi-api-family"
 }

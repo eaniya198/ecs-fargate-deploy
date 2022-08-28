@@ -1,42 +1,39 @@
 version: 0.2
 
-env:
-  variables:
-    TZ: "Asia/Seoul"
-
 phases:
-  install:
-    commands:
-      - echo Entered the install phase...
-
   pre_build:
     commands:
-      - echo Entered the pre_build phase...
-      - aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 948216186415.dkr.ecr.ap-northeast-2.amazonaws.com
-      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - IMAGE_TAGS=$(date "+%y%m%d%H%M%S")
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 948216186415.dkr.ecr.ap-northeast-2.amazonaws.com
 
+      - REPOSITORY_URI=948216186415.dkr.ecr.ap-northeast-2.amazonaws.com/wsi-api-ecr
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH}
   build:
     commands:
       - echo Build started on `date`
-      - docker build -t ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}:${IMAGE_TAGS} .
-      - sed -i "s|CHANGEME|$IMAGE_TAGS|g" taskdef.json
-
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Build completed on `date`
-      - docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}:${IMAGE_TAGS}
-      - printf '[{"name":"wsi-api-ctn"}, "imageUri":"%s"]' ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_REPO}:${IMAGE_TAGS} > imageDetail.json
-      - cat imageDetail.json
-
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '{"ImageURI":"%s"}' $REPOSITORY_URI:$IMAGE_TAG > imageDetail.json
+      - printf '[{"name":"wsi-api-ctn","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
-  files:
+  files: 
+    - imagedefinitions.json
+    - imageDetail.json
     - appspec.yml
     - taskdef.json
   secondary-artifacts:
-    DefinitionArtifacts:
+    DefinitionArtifact:
       files:
-        - appspec.yml
+        - appspec.yaml
         - taskdef.json
     ImageArtifact:
       files:
